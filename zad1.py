@@ -1,6 +1,7 @@
 import math
 from functools import partial
 from tkinter import *
+from scipy.spatial import distance
 
 
 class Line:
@@ -8,6 +9,7 @@ class Line:
     a_y = None
     b_x = None
     b_y = None
+    drawn_item = None
 
     def __init__(self, a_x, a_y, b_x, b_y):
         self.a_x = a_x
@@ -16,7 +18,7 @@ class Line:
         self.b_y = b_y
 
     def draw(self, canvas):
-        canvas.create_line(self.a_x, self.a_y, self.b_x, self.b_y)
+        self.drawn_item = canvas.create_line(self.a_x, self.a_y, self.b_x, self.b_y)
 
 
 class Rectangle:
@@ -24,6 +26,7 @@ class Rectangle:
     a_y = None
     d_x = None
     d_y = None
+    drawn_item = None
 
     def __init__(self, a_x, a_y, d_x, d_y):
         self.a_x = a_x
@@ -32,13 +35,14 @@ class Rectangle:
         self.d_y = d_y
 
     def draw(self, canvas):
-        canvas.create_rectangle(self.a_x, self.a_y, self.d_x, self.d_y)
+        self.drawn_item = canvas.create_rectangle(self.a_x, self.a_y, self.d_x, self.d_y)
 
 
 class Circle:
     a_x = None
     a_y = None
     r = None
+    drawn_item = None
 
     def __init__(self, a_x, a_y, r):
         self.a_x = a_x
@@ -46,7 +50,7 @@ class Circle:
         self.r = r
 
     def draw(self, canvas):
-        canvas.create_oval(self.a_x - self.r, self.a_y - self.r, self.a_x + self.r, self.a_y + self.r)
+        self.drawn_item = canvas.create_oval(self.a_x - self.r, self.a_y - self.r, self.a_x + self.r, self.a_y + self.r)
 
 
 class Menu:
@@ -65,6 +69,9 @@ class Menu:
 
     mouse_circle_a = None
     mouse_circle_r = None
+
+    mouse_move_selected_object = None
+    mouse_move_selected_end_position = None
 
     lines = []
     rectangles = []
@@ -94,6 +101,9 @@ class Menu:
 
         circle_mouse = Button(self.root, width=15, command=self.circle_mouse, text='Okrąg - mysz', height=2)
         circle_mouse.grid(row=5, column=1, sticky='N', padx=10, pady=10)
+
+        circle_mouse = Button(self.root, width=15, command=self.move_mouse, text='Przesuwanie', height=2)
+        circle_mouse.grid(row=6, column=1, sticky='N', padx=10, pady=10)
 
         self.w.grid(row=0, column=2, columnspan=2, rowspan=6, sticky=W+E+N+S)
 
@@ -226,8 +236,92 @@ class Menu:
 
     def add_circle(self, a_x, a_y, r):
         circle = Circle(int(a_x), int(a_y), int(r))
-        self.rectangles.append(circle)
+        self.circles.append(circle)
         circle.draw(self.w)
 
+    def move_mouse(self):
+        self.w.bind("<Button-1>", self.move_clicked)
+
+    def closest_point(self, point, points):
+        closest_index = distance.cdist([point], points).argmin()
+        return closest_index
+
+    def get_closest_primitive(self, clicked_point_x, clicked_point_y):
+        points = []
+        for index, value in enumerate(self.rectangles):
+            points.append({'id': index, 'type': 'rectangle', 'x': value.a_x, 'y': value.a_y})
+            points.append({'id': index, 'type': 'rectangle', 'x': value.d_x, 'y': value.d_y})
+
+        for index, value in enumerate(self.lines):
+            points.append({'id': index, 'type': 'line', 'x': value.a_x, 'y': value.a_y})
+            points.append({'id': index, 'type': 'line', 'x': value.b_x, 'y': value.b_y})
+
+        for index, value in enumerate(self.circles):
+            points.append({'id': index, 'type': 'circle', 'x': value.a_x, 'y': value.a_y})
+
+        point_coordinates = []
+        for value in points:
+            point_coordinates.append((value['x'], value['y']))
+
+        closest_point_index = self.closest_point((clicked_point_x, clicked_point_y), point_coordinates)
+        closest_point = points[closest_point_index]
+
+        if closest_point['type'] is 'rectangle':
+            return self.rectangles[closest_point['id']]
+        if closest_point['type'] is 'line':
+            return self.lines[closest_point['id']]
+        if closest_point['type'] is 'circle':
+            return self.circles[closest_point['id']]
+
+    def move_clicked(self, event):
+        if not self.mouse_move_selected_object:
+            self.mouse_move_selected_object = self.get_closest_primitive(event.x, event.y)
+        else:
+            drawn_item = self.mouse_move_selected_object.drawn_item
+            if self.mouse_move_selected_object.__class__.__name__ is 'Rectangle':
+                if not self.mouse_rectangle_a:
+                    self.mouse_rectangle_a = {
+                        'x': event.x,
+                        'y': event.y
+                    }
+                else:
+                    self.mouse_rectangle_d = {
+                        'x': event.x,
+                        'y': event.y
+                    }
+                    self.w.coords(drawn_item, self.mouse_rectangle_a['x'], self.mouse_rectangle_a['y'], self.mouse_rectangle_d['x'], self.mouse_rectangle_d['y'], )
+                    self.mouse_rectangle_a = None
+                    self.mouse_rectangle_d = None
+                    self.mouse_move_selected_object = None
+            elif self.mouse_move_selected_object.__class__.__name__ is 'Line':
+                if not self.mouse_line_start:
+                    self.mouse_line_start = {
+                        'x': event.x,
+                        'y': event.y
+                    }
+                else:
+                    self.mouse_line_end = {
+                        'x': event.x,
+                        'y': event.y
+                    }
+                    self.w.coords(drawn_item, self.mouse_line_start['x'], self.mouse_line_start['y'], self.mouse_line_end['x'], self.mouse_line_end['y'], )
+                    self.mouse_line_start = None
+                    self.mouse_line_end = None
+                    self.mouse_move_selected_object = None
+            elif self.mouse_move_selected_object.__class__.__name__ is 'Circle':
+                if not self.mouse_circle_a:
+                    self.mouse_circle_a = {
+                        'x': event.x,
+                        'y': event.y
+                    }
+                else:
+                    x = self.mouse_circle_a['x']
+                    y = self.mouse_circle_a['y']
+                    radius_distance = math.sqrt(((self.mouse_circle_a['x'] - event.x) ** 2) + ((self.mouse_circle_a['y'] - event.y) ** 2))
+                    self.mouse_circle_r = radius_distance
+                    self.w.coords(drawn_item, x - radius_distance, y - radius_distance, x + radius_distance, y + radius_distance)
+                    self.mouse_circle_a = None
+                    self.mouse_circle_r = None
+                    self.mouse_move_selected_object = None
 
 Menu()

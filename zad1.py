@@ -115,28 +115,25 @@ class Menu:
         circle_prompted = Button(self.root, width=15, command=self.circle_prompt, text='Okrąg - tekstowe', height=2)
         circle_prompted.grid(row=2, column=1, sticky='N')
 
-        # move_prompted = Button(self.root, width=15, command=self.move_prompted, text='Przesuwanie - tekstowe', height=2)
-        # move_prompted.grid(row=6, column=1, sticky='N', padx=10, pady=10)
-
         change_size_prompted = Button(self.root, width=15, command=self.change_size_prompted, text='Ksztalt - tekstowe', height=2)
-        change_size_prompted.grid(row=7, column=1, sticky='N', padx=10, pady=10)
+        change_size_prompted.grid(row=3, column=1, sticky='N', padx=10, pady=10)
 
         line_mouse = Button(self.root, width=15, command=self.line_mouse, text='Linia - mysz', height=2)
-        line_mouse.grid(row=3, column=1, sticky='N', padx=10, pady=10)
+        line_mouse.grid(row=4, column=1, sticky='N', padx=10, pady=10)
 
         rectangle_mouse = Button(self.root, width=15, command=self.rectangle_mouse, text='Prostokąt - mysz', height=2)
-        rectangle_mouse.grid(row=4, column=1, sticky='N', padx=10, pady=10)
+        rectangle_mouse.grid(row=5, column=1, sticky='N', padx=10, pady=10)
 
         circle_mouse = Button(self.root, width=15, command=self.circle_mouse, text='Okrąg - mysz', height=2)
-        circle_mouse.grid(row=5, column=1, sticky='N', padx=10, pady=10)
+        circle_mouse.grid(row=6, column=1, sticky='N', padx=10, pady=10)
 
-        # move_mouse = Button(self.root, width=15, command=self.move_mouse, text='Przesuwanie - mysz', height=2)
-        # move_mouse.grid(row=6, column=1, sticky='N', padx=10, pady=10)
+        move_mouse = Button(self.root, width=15, command=self.move_mouse, text='Przesuwanie - mysz', height=2)
+        move_mouse.grid(row=7, column=1, sticky='N', padx=10, pady=10)
 
         change_size_mouse = Button(self.root, width=15, command=self.change_size_mouse, text='Ksztalt - mysz', height=2)
-        change_size_mouse.grid(row=6, column=1, sticky='N', padx=10, pady=10)
+        change_size_mouse.grid(row=8, column=1, sticky='N', padx=10, pady=10)
 
-        self.w.grid(row=0, column=2, columnspan=2, rowspan=6, sticky=W+E+N+S)
+        self.w.grid(row=0, column=2, columnspan=2, rowspan=9, sticky=W+E+N+S)
 
         self.root.mainloop()
 
@@ -348,6 +345,39 @@ class Menu:
             draw_button = Button(r, command=lambda: self.mouse_move_selected_object.change_coordinates(int(a_x.get()), int(a_y.get()), int(radius.get()), self.w),
                                  text='Zmien')
             draw_button.grid(columnspan=3, row=4, column=1, padx=10, pady=10)
+
+    def move_mouse(self):
+        self.w.bind("<B1-Motion>", self.move_mouse_held)
+
+    def move_mouse_held(self, event):
+        if not self.mouse_move_selected_object:
+            self.mouse_move_selected_object = self.get_closest_primitive(event.x, event.y)
+            self.w.itemconfig(self.mouse_move_selected_object.drawn_item, outline='red')
+        else:
+            if self.mouse_move_selected_object.__class__.__name__ is 'Rectangle':
+                a_x = self.mouse_move_selected_object.a_x
+                a_y = self.mouse_move_selected_object.a_y
+                d_x = self.mouse_move_selected_object.d_x
+                d_y = self.mouse_move_selected_object.d_y
+
+                difference_d_x = event.x - a_x
+                difference_d_y = event.y - a_y
+
+                self.mouse_move_selected_object.change_coordinates(event.x, event.y, d_x + difference_d_x, d_y + difference_d_y, self.w)
+            elif self.mouse_move_selected_object.__class__.__name__ is 'Line':
+                a_x = self.mouse_move_selected_object.a_x
+                a_y = self.mouse_move_selected_object.a_y
+                b_x = self.mouse_move_selected_object.b_x
+                b_y = self.mouse_move_selected_object.b_y
+
+                difference_b_x = event.x - a_x
+                difference_b_y = event.y - a_y
+
+                self.mouse_move_selected_object.change_coordinates(event.x, event.y, b_x + difference_b_x, b_y + difference_b_y, self.w)
+            elif self.mouse_move_selected_object.__class__.__name__ is 'Circle':
+                radius = self.mouse_move_selected_object.r
+                self.mouse_move_selected_object.change_coordinates(event.x, event.y, radius, self.w)
+
 
     def change_size_mouse(self):
         self.w.bind("<Button-1>", self.change_size_clicked)

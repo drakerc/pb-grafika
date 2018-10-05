@@ -200,7 +200,7 @@ class Menu:
         self.lines.append(line)
         line.draw(self.w)
 
-    def rectangle_prompt(self):
+    def rectangle_prompt_elements(self, **kwargs):
         r = Tk()
         r.title('Wprowadz dane')
         r.geometry('600x150')
@@ -214,10 +214,20 @@ class Menu:
         d_x = Entry(r)
         d_y = Entry(r)
 
+        a_x.insert(0, kwargs.get('a_x_value', ''))
+        a_y.insert(0, kwargs.get('a_y_value', ''))
+        d_x.insert(0, kwargs.get('d_x_value', ''))
+        d_y.insert(0, kwargs.get('d_y_value', ''))
+
         a_x.grid(row=0, column=2)
         a_y.grid(row=0, column=4)
         d_x.grid(row=1, column=2)
         d_y.grid(row=1, column=4)
+
+        return r, a_x, a_y, d_x, d_y
+
+    def rectangle_prompt(self):
+        r, a_x, a_y, d_x, d_y = self.rectangle_prompt_elements()
 
         draw_button = Button(r, command=lambda: self.add_rectangle(a_x.get(), a_y.get(), d_x.get(), d_y.get()), text='Rysuj')
         draw_button.grid(columnspan=3, row=4, column=1, padx=10, pady=10)
@@ -247,7 +257,7 @@ class Menu:
         self.rectangles.append(rectangle)
         rectangle.draw(self.w)
 
-    def circle_prompt(self):
+    def circle_prompt_elements(self, **kwargs):
         r = Tk()
         r.title('Wprowadz dane')
         r.geometry('600x150')
@@ -259,9 +269,18 @@ class Menu:
         a_y = Entry(r)
         radius = Entry(r)
 
+        a_x.insert(0, kwargs.get('a_x_value', ''))
+        a_y.insert(0, kwargs.get('a_y_value', ''))
+        radius.insert(0, kwargs.get('radius_value', ''))
+
         a_x.grid(row=0, column=2)
         a_y.grid(row=0, column=4)
         radius.grid(row=1, column=2)
+
+        return r, a_x, a_y, radius
+
+    def circle_prompt(self):
+        r, a_x, a_y, radius = self.circle_prompt_elements()
 
         draw_button = Button(r, command=lambda: self.add_circle(a_x.get(), a_y.get(), radius.get()), text='Rysuj')
         draw_button.grid(columnspan=3, row=4, column=1, padx=10, pady=10)
@@ -302,24 +321,13 @@ class Menu:
 
         if self.mouse_move_selected_object.__class__.__name__ is 'Rectangle':
             self.w.itemconfig(self.mouse_move_selected_object.drawn_item, outline='red')
-            Label(r, text="A - wspołrzędna X").grid(column=1, row=0, sticky=W)
-            Label(r, text="A - wspołrzędna Y").grid(column=3, row=0, sticky=W)
-            Label(r, text="D - wspołrzędna X").grid(column=1, row=1, sticky=W)
-            Label(r, text="D - wspołrzędna Y").grid(column=3, row=1, sticky=W)
 
-            a_x = Entry(r)
-            a_x.insert(0, self.mouse_move_selected_object.a_x)
-            a_y = Entry(r)
-            a_y.insert(0, self.mouse_move_selected_object.a_y)
-            d_x = Entry(r)
-            d_x.insert(0, self.mouse_move_selected_object.d_x)
-            d_y = Entry(r)
-            d_y.insert(0, self.mouse_move_selected_object.d_y)
+            a_x = self.mouse_move_selected_object.a_x
+            a_y = self.mouse_move_selected_object.a_y
+            d_x = self.mouse_move_selected_object.d_x
+            d_y = self.mouse_move_selected_object.d_y
 
-            a_x.grid(row=0, column=2)
-            a_y.grid(row=0, column=4)
-            d_x.grid(row=1, column=2)
-            d_y.grid(row=1, column=4)
+            r, a_x, a_y, d_x, d_y = self.rectangle_prompt_elements(a_x_value=a_x, a_y_value=a_y, d_x_value=d_x, d_y_value=d_y)
 
             draw_button = Button(r, command=lambda: self.mouse_move_selected_object.change_coordinates(a_x.get(), a_y.get(), d_x.get(), d_y.get(), self.w),
                                  text='Zmien')
@@ -341,20 +349,11 @@ class Menu:
 
         if self.mouse_move_selected_object.__class__.__name__ is 'Circle':
             self.w.itemconfig(self.mouse_move_selected_object.drawn_item, outline='red')
-            Label(r, text="A - wspołrzędna X").grid(column=1, row=0, sticky=W)
-            Label(r, text="A - wspołrzędna Y").grid(column=3, row=0, sticky=W)
-            Label(r, text="Promien").grid(column=1, row=1, sticky=W)
+            a_x = self.mouse_move_selected_object.a_x
+            a_y = self.mouse_move_selected_object.a_y
+            radius_value = self.mouse_move_selected_object.r
 
-            a_x = Entry(r)
-            a_x.insert(0, self.mouse_move_selected_object.a_x)
-            a_y = Entry(r)
-            a_y.insert(0, self.mouse_move_selected_object.a_y)
-            radius = Entry(r)
-            radius.insert(0, self.mouse_move_selected_object.r)
-
-            a_x.grid(row=0, column=2)
-            a_y.grid(row=0, column=4)
-            radius.grid(row=1, column=2)
+            r, a_x, a_y, radius = self.circle_prompt_elements(a_x_value=a_x, a_y_value=a_y, radius_value=radius_value)
 
             draw_button = Button(r, command=lambda: self.mouse_move_selected_object.change_coordinates(int(a_x.get()), int(a_y.get()), int(radius.get()), self.w),
                                  text='Zmien')

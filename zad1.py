@@ -11,13 +11,14 @@ class Line:
     drawn_item = None
 
     def __init__(self, a_x, a_y, b_x, b_y):
-        self.a_x = a_x
-        self.a_y = a_y
-        self.b_x = b_x
-        self.b_y = b_y
+        self.a_x = int(a_x)
+        self.a_y = int(a_y)
+        self.b_x = int(b_x)
+        self.b_y = int(b_y)
 
     def draw(self, canvas):
-        self.drawn_item = canvas.create_line(self.a_x, self.a_y, self.b_x, self.b_y)
+        self.drawn_item = canvas.create_line(self.a_x, self.a_y, self.b_x, self.b_y, fill="black")
+        canvas.unbind("<Button-1>")
 
     def change_coordinates(self, a_x, a_y, b_x, b_y, canvas):
         self.a_x = a_x
@@ -25,7 +26,8 @@ class Line:
         self.b_x = b_x
         self.b_y = b_y
         canvas.coords(self.drawn_item, a_x, a_y, b_x, b_y)
-        canvas.itemconfig(self.drawn_item, outline='black')
+        canvas.itemconfig(self.drawn_item, fill='black')
+        canvas.unbind("<Button-1>")
 
 
 class Rectangle:
@@ -36,13 +38,14 @@ class Rectangle:
     drawn_item = None
 
     def __init__(self, a_x, a_y, d_x, d_y):
-        self.a_x = a_x
-        self.a_y = a_y
-        self.d_x = d_x
-        self.d_y = d_y
+        self.a_x = int(a_x)
+        self.a_y = int(a_y)
+        self.d_x = int(d_x)
+        self.d_y = int(d_y)
 
     def draw(self, canvas):
         self.drawn_item = canvas.create_rectangle(self.a_x, self.a_y, self.d_x, self.d_y)
+        canvas.unbind("<Button-1>")
 
     def change_coordinates(self, a_x, a_y, d_x, d_y, canvas):
         self.a_x = a_x
@@ -51,6 +54,7 @@ class Rectangle:
         self.d_y = d_y
         canvas.coords(self.drawn_item, a_x, a_y, d_x, d_y)
         canvas.itemconfig(self.drawn_item, outline='black')
+        canvas.unbind("<Button-1>")
 
 
 class Circle:
@@ -60,12 +64,13 @@ class Circle:
     drawn_item = None
 
     def __init__(self, a_x, a_y, r):
-        self.a_x = a_x
-        self.a_y = a_y
-        self.r = r
+        self.a_x = int(a_x)
+        self.a_y = int(a_y)
+        self.r = int(r)
 
     def draw(self, canvas):
         self.drawn_item = canvas.create_oval(self.a_x - self.r, self.a_y - self.r, self.a_x + self.r, self.a_y + self.r)
+        canvas.unbind("<Button-1>")
 
     def change_coordinates(self, a_x, a_y, r, canvas):
         self.a_x = a_x
@@ -73,6 +78,7 @@ class Circle:
         self.r = r
         canvas.coords(self.drawn_item, self.a_x - self.r, self.a_y - self.r, self.a_x + self.r, self.a_y + self.r)
         canvas.itemconfig(self.drawn_item, outline='black')
+        canvas.unbind("<Button-1>")
 
 
 class Menu:
@@ -137,7 +143,7 @@ class Menu:
 
         self.root.mainloop()
 
-    def line_prompt(self):
+    def line_prompt_elements(self, **kwargs):
         r = Tk()
         r.title('Wprowadz dane')
         r.geometry('600x150')
@@ -151,15 +157,27 @@ class Menu:
         x_end_entry = Entry(r)
         y_end_entry = Entry(r)
 
+        x_start_entry.insert(0, kwargs.get('x_start_value', ''))
+        y_start_entry.insert(0, kwargs.get('y_start_value', ''))
+        x_end_entry.insert(0, kwargs.get('x_end_value', ''))
+        y_end_entry.insert(0, kwargs.get('y_end_value', ''))
+
         x_start_entry.grid(row=0, column=2)
         y_start_entry.grid(row=1, column=2)
         x_end_entry.grid(row=0, column=4)
         y_end_entry.grid(row=1, column=4)
 
+        return r, x_start_entry, y_start_entry, x_end_entry, y_end_entry
+
+    def line_prompt(self):
+        r, x_start_entry, y_start_entry, x_end_entry, y_end_entry = self.line_prompt_elements()
+
         draw_line_button = Button(r, command=lambda: self.add_line(x_start_entry.get(), y_start_entry.get(), x_end_entry.get(), y_end_entry.get()), text='Rysuj')
         draw_line_button.grid(columnspan=4, row=2, column=1, padx=10, pady=10)
 
     def line_mouse(self):
+        self.w.unbind("<B1-Motion>")
+        self.w.unbind('<ButtonRelease-1>')
         self.w.bind("<Button-1>", self.line_mouse_clicked)
 
     def line_mouse_clicked(self, event):
@@ -205,6 +223,8 @@ class Menu:
         draw_button.grid(columnspan=3, row=4, column=1, padx=10, pady=10)
 
     def rectangle_mouse(self):
+        self.w.unbind("<B1-Motion>")
+        self.w.unbind('<ButtonRelease-1>')
         self.w.bind("<Button-1>", self.rectangle_clicked)
 
     def rectangle_clicked(self, event):
@@ -247,6 +267,8 @@ class Menu:
         draw_button.grid(columnspan=3, row=4, column=1, padx=10, pady=10)
 
     def circle_mouse(self):
+        self.w.unbind("<B1-Motion>")
+        self.w.unbind('<ButtonRelease-1>')
         self.w.bind("<Button-1>", self.circle_clicked)
 
     def circle_clicked(self, event):
@@ -268,16 +290,18 @@ class Menu:
         circle.draw(self.w)
 
     def change_size_prompted(self):
+        self.w.unbind("<B1-Motion>")
+        self.w.unbind('<ButtonRelease-1>')
         self.w.bind("<Button-1>", self.change_size_prompt)
 
     def change_size_prompt(self, event):
         self.mouse_move_selected_object = self.get_closest_primitive(event.x, event.y)
-        self.w.itemconfig(self.mouse_move_selected_object.drawn_item, outline='red')
         r = Tk()
         r.title('Wprowadz dane')
         r.geometry('600x150')
 
         if self.mouse_move_selected_object.__class__.__name__ is 'Rectangle':
+            self.w.itemconfig(self.mouse_move_selected_object.drawn_item, outline='red')
             Label(r, text="A - wspołrzędna X").grid(column=1, row=0, sticky=W)
             Label(r, text="A - wspołrzędna Y").grid(column=3, row=0, sticky=W)
             Label(r, text="D - wspołrzędna X").grid(column=1, row=1, sticky=W)
@@ -302,24 +326,13 @@ class Menu:
             draw_button.grid(columnspan=3, row=4, column=1, padx=10, pady=10)
 
         if self.mouse_move_selected_object.__class__.__name__ is 'Line':
-            Label(r, text="X poczatkowe").grid(column=1, row=0, sticky=W)
-            Label(r, text="Y poczatkowe").grid(column=1, row=1, sticky=W)
-            Label(r, text="X koncowe").grid(column=3, row=0, sticky=W)
-            Label(r, text="Y koncowe").grid(column=3, row=1, sticky=W)
+            self.w.itemconfig(self.mouse_move_selected_object.drawn_item, fill='red')
+            a_x = self.mouse_move_selected_object.a_x
+            a_y = self.mouse_move_selected_object.a_y
+            b_x = self.mouse_move_selected_object.b_x
+            b_y = self.mouse_move_selected_object.b_y
 
-            x_start_entry = Entry(r)
-            x_start_entry.insert(0, self.mouse_move_selected_object.a_x)
-            y_start_entry = Entry(r)
-            y_start_entry.insert(0, self.mouse_move_selected_object.a_y)
-            x_end_entry = Entry(r)
-            x_end_entry.insert(0, self.mouse_move_selected_object.b_x)
-            y_end_entry = Entry(r)
-            y_end_entry.insert(0, self.mouse_move_selected_object.b_y)
-
-            x_start_entry.grid(row=0, column=2)
-            y_start_entry.grid(row=1, column=2)
-            x_end_entry.grid(row=0, column=4)
-            y_end_entry.grid(row=1, column=4)
+            r, x_start_entry, y_start_entry, x_end_entry, y_end_entry = self.line_prompt_elements(x_start_value=a_x, y_start_value=a_y, x_end_value=b_x, y_end_value=b_y)
 
             draw_line_button = Button(r, command=lambda: self.mouse_move_selected_object.change_coordinates(x_start_entry.get(), y_start_entry.get(),
                                                                        x_end_entry.get(), y_end_entry.get(), self.w),
@@ -327,6 +340,7 @@ class Menu:
             draw_line_button.grid(columnspan=4, row=2, column=1, padx=10, pady=10)
 
         if self.mouse_move_selected_object.__class__.__name__ is 'Circle':
+            self.w.itemconfig(self.mouse_move_selected_object.drawn_item, outline='red')
             Label(r, text="A - wspołrzędna X").grid(column=1, row=0, sticky=W)
             Label(r, text="A - wspołrzędna Y").grid(column=3, row=0, sticky=W)
             Label(r, text="Promien").grid(column=1, row=1, sticky=W)
@@ -347,12 +361,20 @@ class Menu:
             draw_button.grid(columnspan=3, row=4, column=1, padx=10, pady=10)
 
     def move_mouse(self):
+        self.w.unbind("<B1-Motion>")
+        self.w.unbind('<ButtonRelease-1>')
+
         self.w.bind("<B1-Motion>", self.move_mouse_held)
+        self.w.bind('<ButtonRelease-1>', self.move_mouse_released)
 
     def move_mouse_held(self, event):
         if not self.mouse_move_selected_object:
             self.mouse_move_selected_object = self.get_closest_primitive(event.x, event.y)
-            self.w.itemconfig(self.mouse_move_selected_object.drawn_item, outline='red')
+            if self.mouse_move_selected_object.__class__.__name__ is 'Line':
+                self.w.itemconfig(self.mouse_move_selected_object.drawn_item, fill='red')
+            else:
+                self.w.itemconfig(self.mouse_move_selected_object.drawn_item, outline='red')
+
         else:
             if self.mouse_move_selected_object.__class__.__name__ is 'Rectangle':
                 a_x = self.mouse_move_selected_object.a_x
@@ -360,8 +382,8 @@ class Menu:
                 d_x = self.mouse_move_selected_object.d_x
                 d_y = self.mouse_move_selected_object.d_y
 
-                difference_d_x = event.x - a_x
-                difference_d_y = event.y - a_y
+                difference_d_x = event.x - int(a_x)
+                difference_d_y = event.y - int(a_y)
 
                 self.mouse_move_selected_object.change_coordinates(event.x, event.y, d_x + difference_d_x, d_y + difference_d_y, self.w)
             elif self.mouse_move_selected_object.__class__.__name__ is 'Line':
@@ -370,16 +392,22 @@ class Menu:
                 b_x = self.mouse_move_selected_object.b_x
                 b_y = self.mouse_move_selected_object.b_y
 
-                difference_b_x = event.x - a_x
-                difference_b_y = event.y - a_y
+                difference_b_x = event.x - int(a_x)
+                difference_b_y = event.y - int(a_y)
 
                 self.mouse_move_selected_object.change_coordinates(event.x, event.y, b_x + difference_b_x, b_y + difference_b_y, self.w)
             elif self.mouse_move_selected_object.__class__.__name__ is 'Circle':
                 radius = self.mouse_move_selected_object.r
                 self.mouse_move_selected_object.change_coordinates(event.x, event.y, radius, self.w)
 
+    def move_mouse_released(self, event):
+        self.mouse_move_selected_object = None
+        self.w.unbind("<B1-Motion>")
+
 
     def change_size_mouse(self):
+        self.w.unbind("<B1-Motion>")
+        self.w.unbind('<ButtonRelease-1>')
         self.w.bind("<Button-1>", self.change_size_clicked)
 
     def closest_point(self, point, points):
@@ -416,9 +444,12 @@ class Menu:
     def change_size_clicked(self, event):
         if not self.mouse_move_selected_object:
             self.mouse_move_selected_object = self.get_closest_primitive(event.x, event.y)
-            self.w.itemconfig(self.mouse_move_selected_object.drawn_item, outline='red')
+            if self.mouse_move_selected_object.__class__.__name__ is 'Line':
+                self.w.itemconfig(self.mouse_move_selected_object.drawn_item, fill='red')
+            else:
+                self.w.itemconfig(self.mouse_move_selected_object.drawn_item, outline='red')
+
         else:
-            drawn_item = self.mouse_move_selected_object.drawn_item
             if self.mouse_move_selected_object.__class__.__name__ is 'Rectangle':
                 if not self.mouse_rectangle_a:
                     self.mouse_rectangle_a = {

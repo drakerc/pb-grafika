@@ -20,7 +20,7 @@ class PPM:
     pixel_g = None
     pixel_b = None
 
-    def read_ppm(self, line, mode):
+    def read_ppm(self, line):
         for value in line:
             if value.startswith('#') or value == '':
                 continue
@@ -34,6 +34,33 @@ class PPM:
                 self.pixels = self.img.load()  # create the pixel map
 
             self.read_pixels(value)
+
+    def read_ppm_binary(self, file, chunk_size):
+        while not self.header_read:
+            value = file.readline().decode('Cp1250').splitlines()  # stupid but works
+            value = value[0]
+            if value.startswith('#') or value == '':
+                continue
+            value = value.split('#')[0]  # remove any comments that are not in the beginning
+            self.read_header(value)
+
+        if self.header_read:
+            bytes_read = file.read(chunk_size)
+            if self.img is None:
+                self.img = Image.new('RGB', (self.width, self.height),
+                                     "black")  # create a new black image
+                self.pixels = self.img.load()  # create the pixel map
+            while bytes_read:
+                for b in bytes_read:
+                    if self.img is None:
+                        self.img = Image.new('RGB', (self.width, self.height),
+                                                   "black")  # create a new black image
+                        self.pixels = self.img.load()  # create the pixel map
+
+                    self.read_pixels(str(b))
+
+                bytes_read = file.read(chunk_size)
+
 
     def read_header(self, value):
         line_elements = value.split()
@@ -90,11 +117,11 @@ class PPM:
                 continue
 
     def show_image(self):
-        self.img.save('fileee', 'BMP')
-        # self.img.show()
+        self.img.show()
 
 
 class Menu:
+    CHUNKSIZE = 1024000
     root = Tk()
 
     def __init__(self):
@@ -118,70 +145,52 @@ class Menu:
             print('Wrong file selected')
             exit()
 
-        mode = 0  # 0 - r, 1 - rb
-
         ppm_object = PPM()
 
-
-        ppm_file = open(file, 'r')
+        ppm_file = open(file, 'r', encoding='cp1250')
         try:
             tmp_lines = ppm_file.read().splitlines()
             while tmp_lines:
-                ppm_object.read_ppm([line for line in tmp_lines], mode)
-                tmp_lines = ppm_file.read(mode).splitlines()
-
+                ppm_object.read_ppm([line for line in tmp_lines])
+                tmp_lines = ppm_file.read().splitlines()
+            ppm_file.close()
             ppm_object.show_image()
             print("--- %s seconds ---" % (time.time() - start_time))
+
         except:
             ppm_file.close()
-            CHUNKSIZE = 10240
             file = open(file, "rb")
 
-            while not ppm_object.header_read:
-                value = file.readline().decode('Cp1250').splitlines()  # stupid but works
-                value = value[0]
-                if value.startswith('#') or value == '':
-                    continue
-                value = value.split('#')[0]  # remove any comments that are not in the beginning
-                ppm_object.read_header(value)
+            ppm_object.read_ppm_binary(file, self.CHUNKSIZE)
+            file.close()
+            ppm_object.show_image()
+            print("--- %s seconds ---" % (time.time() - start_time))
 
-            if ppm_object.header_read:
-                try:
-                    bytes_read = file.read(CHUNKSIZE)
-                    while bytes_read:
-                        for b in bytes_read:
-                            if ppm_object.img is None:
-                                ppm_object.img = Image.new('RGB', (ppm_object.width, ppm_object.height),
-                                                     "black")  # create a new black image
-                                ppm_object.pixels = ppm_object.img.load()  # create the pixel map
-
-                            ppm_object.read_pixels(str(b))
-
-                        bytes_read = file.read(CHUNKSIZE)
-                finally:
-                    file.close()
-                    ppm_object.show_image()
-                    print("--- %s seconds ---" % (time.time() - start_time))
-
-
-
-
-
+            # while not ppm_object.header_read:
+            #     value = file.readline().decode('Cp1250').splitlines()  # stupid but works
+            #     value = value[0]
+            #     if value.startswith('#') or value == '':
+            #         continue
+            #     value = value.split('#')[0]  # remove any comments that are not in the beginning
+            #     ppm_object.read_header(value)
             #
-            # mode = 1
-            # ppm_file = open(file, 'rb')
-            # tmp_lines = ppm_file.read()
-            # while tmp_lines:
-            #     ppm_object.read_ppm(tmp_lines, mode)
-            #     tmp_lines = ppm_file.read(mode)
-
-
-        # while tmp_lines:
-        #     ppm_object.read_ppm([line for line in tmp_lines], mode)
-        #     tmp_lines = ppm_file.read(mode).splitlines()
-        #
-        # ppm_object.show_image()
-        # print("--- %s seconds ---" % (time.time() - start_time))
+            # if ppm_object.header_read:
+            #     try:
+            #         bytes_read = file.read(self.CHUNKSIZE)
+            #         while bytes_read:
+            #             for b in bytes_read:
+            #                 if ppm_object.img is None:
+            #                     ppm_object.img = Image.new('RGB', (ppm_object.width, ppm_object.height),
+            #                                          "black")  # create a new black image
+            #                     ppm_object.pixels = ppm_object.img.load()  # create the pixel map
+            #
+            #                 ppm_object.read_pixels(str(b))
+            #
+            #             bytes_read = file.read(self.CHUNKSIZE)
+            #     finally:
+            #         file.close()
+            #         ppm_object.show_image()
+            #         print("--- %s seconds ---" % (time.time() - start_time))
 
 
 Menu()

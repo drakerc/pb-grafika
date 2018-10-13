@@ -16,28 +16,38 @@ class PPM:
     current_column = 0
     img = None
     pixels = None
+    current_max_color = 0
+    pixels_positions = None
 
     pixel_r = None
     pixel_g = None
     pixel_b = None
 
-    def read_ppm(self, line):
-        for value in line:
+    def read_ppm(self, file):
+        tmp_lines = file.read().splitlines()
+        for index, value in enumerate(tmp_lines):
             if value.startswith('#') or value == '':
                 continue
             value = value.split('#')[0]  # remove any comments that are not in the beginning
             if not self.header_read:
                 self.read_header(value)
                 continue
+
             # if self.type == 1:
             #     print('The P6/P3 header does not match its real type')
             #     exit()
+
+
+            self.pixels_positions = index
+            if self.max_color < 255 and self.current_max_color == 0:
+                for pixel in tmp_lines[self.pixels_positions:]:
+                    self.read_max_color(pixel)
 
             if self.img is None:
                 self.img = Image.new('RGB', (self.width, self.height), "black")  # create a new black image
                 self.pixels = self.img.load()  # create the pixel map
 
-            self.read_pixels(value, )
+            self.read_pixels(value)
 
     def read_ppm_binary(self, file, chunk_size):
         while not self.header_read:
@@ -94,6 +104,9 @@ class PPM:
                 print('Something is wrong with the header')
                 exit()
 
+    def scale_pixel(self, value):
+        return round(self.max_color / self.current_max_color * value)
+
     def read_pixels(self, value):
         line_elements = value.split()
         for element in line_elements:
@@ -102,13 +115,22 @@ class PPM:
             element = element.split('#')[0]  # remove any comments that are not in the beginning
 
             if self.pixel_r is None:
-                self.pixel_r = int(element)
+                if self.max_color < 255:
+                    self.pixel_r = self.scale_pixel(int(element))
+                else:
+                    self.pixel_r = int(element)
                 continue
             if self.pixel_g is None:
-                self.pixel_g = int(element)
+                if self.max_color < 255:
+                    self.pixel_g = self.scale_pixel(int(element))
+                else:
+                    self.pixel_g = int(element)
                 continue
             if self.pixel_b is None:
-                self.pixel_b = int(element)
+                if self.max_color < 255:
+                    self.pixel_b = self.scale_pixel(int(element))
+                else:
+                    self.pixel_b = int(element)
                 # continue
             if self.pixel_r is not None and self.pixel_g is not None and self.pixel_b is not None:
                 if self.current_row == self.height:
@@ -124,6 +146,19 @@ class PPM:
             else:
                 continue
 
+    def read_max_color(self, value):
+        if value.startswith('#') or value == '':
+            return
+        line_elements = value.split()
+
+        for element in line_elements:
+            if element.startswith('#') or element == '' or not element.isdigit():
+                continue
+            element = element.split('#')[0]  # remove any comments that are not in the beginning
+
+            if int(element) > self.current_max_color:
+                self.current_max_color = int(element)
+
     def show_image(self):
         self.img.show()
 
@@ -132,7 +167,7 @@ class PPM:
 
 
 class Menu:
-    CHUNKSIZE = 1024000
+    CHUNKSIZE = 10240
     root = Tk()
     w = Canvas(root,
                width=700,
@@ -151,10 +186,10 @@ class Menu:
         load_ppm = Button(self.root, width=15, command=self.load_ppm, text='Wczytaj plik PPM', height=2)
         load_ppm.grid(row=0, column=1, sticky='N')
 
-        load_jpg= Button(self.root, width=15, command=self.load_jpg, text='Wczytaj plik JPG', height=2)
+        load_jpg = Button(self.root, width=15, command=self.load_jpg, text='Wczytaj plik JPG', height=2)
         load_jpg.grid(row=1, column=1, sticky='N')
 
-        save_jpg= Button(self.root, width=15, command=self.save_jpg_prompt, text='Zapisz plik JPG', height=2)
+        save_jpg = Button(self.root, width=15, command=self.save_jpg_prompt, text='Zapisz plik JPG', height=2)
         save_jpg.grid(row=2, column=1, sticky='N')
 
         self.w.grid(row=0, column=2, columnspan=2, rowspan=9, sticky=W+E+N+S)
@@ -181,10 +216,7 @@ class Menu:
         ppm_file = open(file, 'r', encoding='cp1250')
 
         try:
-            tmp_lines = ppm_file.read().splitlines()
-            while tmp_lines:
-                ppm_object.read_ppm([line for line in tmp_lines])
-                tmp_lines = ppm_file.read().splitlines()
+            ppm_object.read_ppm(ppm_file)
             ppm_file.close()
 
         except:

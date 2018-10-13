@@ -1,8 +1,9 @@
 from tkinter import *
 from tkinter.filedialog import askopenfilename
 import os
-from PIL import Image
+from PIL import Image, ImageTk
 import time
+
 
 class PPM:
     header_read = False
@@ -28,6 +29,9 @@ class PPM:
             if not self.header_read:
                 self.read_header(value)
                 continue
+            if self.type == 1:
+                print('The P6/P3 header does not match its real type')
+                exit()
 
             if self.img is None:
                 self.img = Image.new('RGB', (self.width, self.height), "black")  # create a new black image
@@ -45,6 +49,9 @@ class PPM:
             self.read_header(value)
 
         if self.header_read:
+            if self.type == 0:
+                print('The P6/P3 header does not match its real type')
+                exit()
             bytes_read = file.read(chunk_size)
             if self.img is None:
                 self.img = Image.new('RGB', (self.width, self.height),
@@ -60,7 +67,6 @@ class PPM:
                     self.read_pixels(str(b))
 
                 bytes_read = file.read(chunk_size)
-
 
     def read_header(self, value):
         line_elements = value.split()
@@ -85,10 +91,8 @@ class PPM:
                 self.header_read = True
                 break
             else:
-                continue
-            # else:
-            #     print('Something is wrong with the header')
-            #     exit()
+                print('Something is wrong with the header')
+                exit()
 
     def read_pixels(self, value):
         line_elements = value.split()
@@ -119,10 +123,17 @@ class PPM:
     def show_image(self):
         self.img.show()
 
+    def get_image(self):
+        return self.img
+
 
 class Menu:
     CHUNKSIZE = 1024000
     root = Tk()
+    w = Canvas(root,
+               width=700,
+               height=700,
+               background='#ffffff')
 
     def __init__(self):
         maincolor = '#0288d1'
@@ -134,7 +145,16 @@ class Menu:
         load_ppm = Button(self.root, width=15, command=self.load_ppm, text='Wczytaj plik PPM', height=2)
         load_ppm.grid(row=0, column=1, sticky='N')
 
+        self.w.grid(row=0, column=2, columnspan=2, rowspan=9, sticky=W+E+N+S)
+
         self.root.mainloop()
+
+    def resize_image(self, image):
+        wpercent = (700 / float(image.size[0]))
+        hsize = int((float(image.size[1]) * float(wpercent)))
+        if image.size[0] > 700 or image.size[1] > 700:
+            return image.resize((700, hsize), Image.ANTIALIAS)
+        return image
 
     def load_ppm(self):
         file = askopenfilename()
@@ -146,51 +166,26 @@ class Menu:
             exit()
 
         ppm_object = PPM()
-
         ppm_file = open(file, 'r', encoding='cp1250')
+
         try:
             tmp_lines = ppm_file.read().splitlines()
             while tmp_lines:
                 ppm_object.read_ppm([line for line in tmp_lines])
                 tmp_lines = ppm_file.read().splitlines()
             ppm_file.close()
-            ppm_object.show_image()
-            print("--- %s seconds ---" % (time.time() - start_time))
 
         except:
             ppm_file.close()
             file = open(file, "rb")
-
             ppm_object.read_ppm_binary(file, self.CHUNKSIZE)
             file.close()
-            ppm_object.show_image()
-            print("--- %s seconds ---" % (time.time() - start_time))
 
-            # while not ppm_object.header_read:
-            #     value = file.readline().decode('Cp1250').splitlines()  # stupid but works
-            #     value = value[0]
-            #     if value.startswith('#') or value == '':
-            #         continue
-            #     value = value.split('#')[0]  # remove any comments that are not in the beginning
-            #     ppm_object.read_header(value)
-            #
-            # if ppm_object.header_read:
-            #     try:
-            #         bytes_read = file.read(self.CHUNKSIZE)
-            #         while bytes_read:
-            #             for b in bytes_read:
-            #                 if ppm_object.img is None:
-            #                     ppm_object.img = Image.new('RGB', (ppm_object.width, ppm_object.height),
-            #                                          "black")  # create a new black image
-            #                     ppm_object.pixels = ppm_object.img.load()  # create the pixel map
-            #
-            #                 ppm_object.read_pixels(str(b))
-            #
-            #             bytes_read = file.read(self.CHUNKSIZE)
-            #     finally:
-            #         file.close()
-            #         ppm_object.show_image()
-            #         print("--- %s seconds ---" % (time.time() - start_time))
+        image = self.resize_image(ppm_object.get_image())
+        print("--- %s seconds ---" % (time.time() - start_time))
+        tkimage = ImageTk.PhotoImage(image)
+        self.w.create_image(350, 350, image=tkimage)
+        self.root.mainloop()
 
 
 Menu()

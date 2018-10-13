@@ -1,7 +1,5 @@
-import math
 from tkinter import *
 from tkinter.filedialog import askopenfilename
-from scipy.spatial import distance
 import os
 from PIL import Image
 import time
@@ -22,7 +20,7 @@ class PPM:
     pixel_g = None
     pixel_b = None
 
-    def read_ppm(self, line):
+    def read_ppm(self, line, mode):
         for value in line:
             if value.startswith('#') or value == '':
                 continue
@@ -36,19 +34,6 @@ class PPM:
                 self.pixels = self.img.load()  # create the pixel map
 
             self.read_pixels(value)
-
-            # if self.max_color > 255:
-            #     self.pixel_spacing = 6
-            # else:
-            #     self.pixel_spacing = 3
-            #
-            # pixels_colors = value.split()
-            # pixels_in_row = [pixels_colors[x:x+self.pixel_spacing] for x in range(0, len(pixels_colors), self.pixel_spacing)]
-            #
-            # for index, value in enumerate(pixels_in_row):
-            #     self.pixels[index, self.current_row] = (int(value[0]), int(value[1]), int(value[2]))
-            #
-            # self.current_row += 1
 
     def read_header(self, value):
         line_elements = value.split()
@@ -105,7 +90,8 @@ class PPM:
                 continue
 
     def show_image(self):
-        self.img.show()
+        self.img.save('fileee', 'BMP')
+        # self.img.show()
 
 
 class Menu:
@@ -132,16 +118,70 @@ class Menu:
             print('Wrong file selected')
             exit()
 
+        mode = 0  # 0 - r, 1 - rb
+
         ppm_object = PPM()
 
-        ppm_file = open(file, 'r', encoding='cp1250')
-        tmp_lines = ppm_file.read(100000).splitlines()
-        while tmp_lines:
-            ppm_object.read_ppm([line for line in tmp_lines])
-            tmp_lines = ppm_file.read(100000).splitlines()
 
-        ppm_object.show_image()
-        print("--- %s seconds ---" % (time.time() - start_time))
+        ppm_file = open(file, 'r')
+        try:
+            tmp_lines = ppm_file.read().splitlines()
+            while tmp_lines:
+                ppm_object.read_ppm([line for line in tmp_lines], mode)
+                tmp_lines = ppm_file.read(mode).splitlines()
+
+            ppm_object.show_image()
+            print("--- %s seconds ---" % (time.time() - start_time))
+        except:
+            ppm_file.close()
+            CHUNKSIZE = 10240
+            file = open(file, "rb")
+
+            while not ppm_object.header_read:
+                value = file.readline().decode('Cp1250').splitlines()  # stupid but works
+                value = value[0]
+                if value.startswith('#') or value == '':
+                    continue
+                value = value.split('#')[0]  # remove any comments that are not in the beginning
+                ppm_object.read_header(value)
+
+            if ppm_object.header_read:
+                try:
+                    bytes_read = file.read(CHUNKSIZE)
+                    while bytes_read:
+                        for b in bytes_read:
+                            if ppm_object.img is None:
+                                ppm_object.img = Image.new('RGB', (ppm_object.width, ppm_object.height),
+                                                     "black")  # create a new black image
+                                ppm_object.pixels = ppm_object.img.load()  # create the pixel map
+
+                            ppm_object.read_pixels(str(b))
+
+                        bytes_read = file.read(CHUNKSIZE)
+                finally:
+                    file.close()
+                    ppm_object.show_image()
+                    print("--- %s seconds ---" % (time.time() - start_time))
+
+
+
+
+
+            #
+            # mode = 1
+            # ppm_file = open(file, 'rb')
+            # tmp_lines = ppm_file.read()
+            # while tmp_lines:
+            #     ppm_object.read_ppm(tmp_lines, mode)
+            #     tmp_lines = ppm_file.read(mode)
+
+
+        # while tmp_lines:
+        #     ppm_object.read_ppm([line for line in tmp_lines], mode)
+        #     tmp_lines = ppm_file.read(mode).splitlines()
+        #
+        # ppm_object.show_image()
+        # print("--- %s seconds ---" % (time.time() - start_time))
 
 
 Menu()

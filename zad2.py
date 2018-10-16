@@ -17,6 +17,7 @@ class PPM:
     img = None
     pixels = None
     pixels_positions = None
+    drawn_pixels = 0
 
     pixel_r = None
     pixel_g = None
@@ -77,14 +78,26 @@ class PPM:
                     self.type = 0
                 elif element == 'P6':
                     self.type = 1
+                else:
+                    print('Bad type (P3/P6)')
+                    exit()
                 continue
             if self.width is None:
+                if not element.isdigit():
+                    print('Bad width')
+                    exit()
                 self.width = int(element)
                 continue
             if self.height is None:
+                if not element.isdigit():
+                    print('Bad height')
+                    exit()
                 self.height = int(element)
                 continue
             if self.max_color is None:
+                if not element.isdigit():
+                    print('Bad max color')
+                    exit()
                 self.max_color = int(element)
                 # continue
             if self.type is not None and self.width and self.height and self.max_color:
@@ -126,6 +139,7 @@ class PPM:
                 if self.current_row == self.height:
                     continue
                 self.pixels[self.current_column, self.current_row] = (self.pixel_r, self.pixel_g, self.pixel_b)
+                self.drawn_pixels += 1
                 self.pixel_r = None
                 self.pixel_g = None
                 self.pixel_b = None
@@ -147,7 +161,7 @@ class PPM:
 
 
 class Menu:
-    CHUNKSIZE = 1024000
+    CHUNKSIZE = 10240
     root = Tk()
     w = Canvas(root,
                width=700,
@@ -204,6 +218,10 @@ class Menu:
             file = open(file, "rb")
             ppm_object.read_ppm_binary(file, self.CHUNKSIZE)
             file.close()
+
+        if ppm_object.drawn_pixels != ppm_object.width * ppm_object.height:
+            print('Wrong amount of pixels drawn')
+            exit()
 
         self.image = self.resize_image(ppm_object.get_image())
         print("--- %s seconds ---" % (time.time() - start_time))

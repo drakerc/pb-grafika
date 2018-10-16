@@ -16,7 +16,6 @@ class PPM:
     current_column = 0
     img = None
     pixels = None
-    current_max_color = 0
     pixels_positions = None
 
     pixel_r = None
@@ -36,12 +35,6 @@ class PPM:
             # if self.type == 1:
             #     print('The P6/P3 header does not match its real type')
             #     exit()
-
-
-            self.pixels_positions = index
-            if self.max_color < 255 and self.current_max_color == 0:
-                for pixel in tmp_lines[self.pixels_positions:]:
-                    self.read_max_color(pixel)
 
             if self.img is None:
                 self.img = Image.new('RGB', (self.width, self.height), "black")  # create a new black image
@@ -64,16 +57,13 @@ class PPM:
                 exit()
             bytes_read = file.read(chunk_size)
             if self.img is None:
-                self.img = Image.new('RGB', (self.width, self.height),
-                                     "black")  # create a new black image
+                self.img = Image.new('RGB', (self.width, self.height), "black")  # create a new black image
                 self.pixels = self.img.load()  # create the pixel map
             while bytes_read:
                 for b in bytes_read:
                     if self.img is None:
-                        self.img = Image.new('RGB', (self.width, self.height),
-                                                   "black")  # create a new black image
+                        self.img = Image.new('RGB', (self.width, self.height), "black")  # create a new black image
                         self.pixels = self.img.load()  # create the pixel map
-
                     self.read_pixels(str(b))
 
                 bytes_read = file.read(chunk_size)
@@ -105,7 +95,7 @@ class PPM:
                 exit()
 
     def scale_pixel(self, value):
-        return round(self.max_color / self.current_max_color * value)
+        return round(255 / self.max_color * value)
 
     def read_pixels(self, value):
         line_elements = value.split()
@@ -115,19 +105,19 @@ class PPM:
             element = element.split('#')[0]  # remove any comments that are not in the beginning
 
             if self.pixel_r is None:
-                if self.max_color < 255:
+                if self.max_color != 255:
                     self.pixel_r = self.scale_pixel(int(element))
                 else:
                     self.pixel_r = int(element)
                 continue
             if self.pixel_g is None:
-                if self.max_color < 255:
+                if self.max_color != 255:
                     self.pixel_g = self.scale_pixel(int(element))
                 else:
                     self.pixel_g = int(element)
                 continue
             if self.pixel_b is None:
-                if self.max_color < 255:
+                if self.max_color != 255:
                     self.pixel_b = self.scale_pixel(int(element))
                 else:
                     self.pixel_b = int(element)
@@ -146,28 +136,18 @@ class PPM:
             else:
                 continue
 
-    def read_max_color(self, value):
-        if value.startswith('#') or value == '':
-            return
-        line_elements = value.split()
-
-        for element in line_elements:
-            if element.startswith('#') or element == '' or not element.isdigit():
-                continue
-            element = element.split('#')[0]  # remove any comments that are not in the beginning
-
-            if int(element) > self.current_max_color:
-                self.current_max_color = int(element)
-
     def show_image(self):
         self.img.show()
 
     def get_image(self):
         return self.img
 
+    def save_image(self):
+        self.img.save('wyjscie.bmp')
+
 
 class Menu:
-    CHUNKSIZE = 10240
+    CHUNKSIZE = 1024000
     root = Tk()
     w = Canvas(root,
                width=700,

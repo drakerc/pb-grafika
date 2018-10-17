@@ -3,6 +3,7 @@ from tkinter.filedialog import askopenfilename
 import os
 from PIL import Image, ImageTk
 import time
+from tkcolorpicker import askcolor
 
 
 class PPM:
@@ -171,7 +172,7 @@ class Menu:
     image = None
 
     def __init__(self):
-        maincolor = '#0288d1'
+        maincolor = '#ffffff'
 
         self.root.configure(bg=maincolor)
         self.root.title('Krzysztof Kosinski - program grafika komputerowa')
@@ -248,7 +249,7 @@ class Menu:
 
         r = Tk()
         r.title('Wprowadz dane')
-        r.geometry('600x300')
+        r.geometry('300x150')
         Label(r, text="Kompresja").grid(column=1, row=0, sticky=W)
         Label(r, text="Nazwa pliku").grid(column=1, row=1, sticky=W)
 

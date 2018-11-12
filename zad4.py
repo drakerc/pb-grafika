@@ -226,7 +226,16 @@ class Menu:
         convolution = Button(self.root, width=15, command=self.convolution, text='Splot maski', height=2)
         convolution.grid(row=3, column=3, sticky='N')
 
-        self.w.grid(row=4, column=0, columnspan=4, rowspan=9, sticky=W+E+N+S)
+        sharpen = Button(self.root, width=15, command=self.sharpening_filter, text='Filtr wyostrzajacy', height=2)
+        sharpen.grid(row=4, column=0, sticky='N')
+
+        lowpass = Button(self.root, width=15, command=self.lowpass_filter, text='Filtr dolnoprzepustowy\nblur', height=2)
+        lowpass.grid(row=4, column=1, sticky='N')
+
+        emboss = Button(self.root, width=15, command=self.emboss_filter, text='Emboss', height=2)
+        emboss.grid(row=4, column=2, sticky='N')
+
+        self.w.grid(row=5, column=0, columnspan=4, rowspan=9, sticky=W+E+N+S)
 
         self.root.mainloop()
 
@@ -613,10 +622,232 @@ class Menu:
         self.root.mainloop()
 
     def highpass_filter(self):
-        x = 1
+        highpass_array = [[1, -2, 1],
+                   [-2, 5, -2],
+                   [1, -2, 1]]
+
+        original_image = self.image
+
+        edges = []
+        top_edge = 0
+
+        for i in range(self.image.width):
+            for j in range(self.image.height):
+                top_left = self.get_filter_pixel(original_image, i-1, j-1)
+                top = self.get_filter_pixel(original_image, i, j-1)
+                top_right = self.get_filter_pixel(original_image, i+1, j-1)
+
+                center_left = self.get_filter_pixel(original_image, i-1, j)
+                center = self.get_filter_pixel(original_image, i, j)
+                center_right = self.get_filter_pixel(original_image, i+1, j)
+
+                bottom_left = self.get_filter_pixel(original_image, i-1, j+1)
+                bottom = self.get_filter_pixel(original_image, i, j+1)
+                bottom_right = self.get_filter_pixel(original_image, i+1, j+1)
+
+                pixel_x = (highpass_array[0][0] * top_left[0]) + (highpass_array[0][1] * top[0]) + (highpass_array[0][2] * top_right[0]) + (highpass_array[1][0] * center_left[0]) + (highpass_array[1][1] * center[0]) + (highpass_array[1][2] * center_right[0]) + (highpass_array[2][0] * bottom_left[0]) + (highpass_array[2][1] * bottom[0]) + (highpass_array[2][2] * bottom_right[0])
+                # value = math.sqrt((pixel_x*pixel_x) + (pixel_y*pixel_y))
+                # value = int(value)
+
+                value = int(pixel_x)
+                # self.image.putpixel((i, j), (value, value, value))
+
+                edges.append({
+                    'i': i,
+                    'j': j,
+                    'edge': value
+                })
+
+                if value > top_edge:
+                    top_edge = value
+
+        for edge in edges:
+            value = self.scale_pixel(top_edge, edge['edge'])
+            self.image.putpixel((edge['i'], edge['j']), (value, value, value))
+
+        tkimage = ImageTk.PhotoImage(self.image)
+        self.w.create_image(350, 350, image=tkimage)
+        self.root.mainloop()
 
     def gaussian_blur(self):
-        x = 1
+        gaussian_array = [[1/16, 1/8, 1/16],
+                   [1/8, 1/4, 1/8],
+                   [1/16, 1/8, 1/16]]
+
+        original_image = self.image
+
+        edges = []
+        top_edge = 0
+
+        for i in range(self.image.width):
+            for j in range(self.image.height):
+                top_left = self.get_filter_pixel(original_image, i-1, j-1)
+                top = self.get_filter_pixel(original_image, i, j-1)
+                top_right = self.get_filter_pixel(original_image, i+1, j-1)
+
+                center_left = self.get_filter_pixel(original_image, i-1, j)
+                center = self.get_filter_pixel(original_image, i, j)
+                center_right = self.get_filter_pixel(original_image, i+1, j)
+
+                bottom_left = self.get_filter_pixel(original_image, i-1, j+1)
+                bottom = self.get_filter_pixel(original_image, i, j+1)
+                bottom_right = self.get_filter_pixel(original_image, i+1, j+1)
+
+                pixel_x = (gaussian_array[0][0] * top_left[0]) + (gaussian_array[0][1] * top[0]) + (gaussian_array[0][2] * top_right[0]) + (gaussian_array[1][0] * center_left[0]) + (gaussian_array[1][1] * center[0]) + (gaussian_array[1][2] * center_right[0]) + (gaussian_array[2][0] * bottom_left[0]) + (gaussian_array[2][1] * bottom[0]) + (gaussian_array[2][2] * bottom_right[0])
+                # value = math.sqrt((pixel_x*pixel_x) + (pixel_y*pixel_y))
+                # value = int(value)
+
+                value = int(pixel_x)
+                # self.image.putpixel((i, j), (value, value, value))
+
+                edges.append({
+                    'i': i,
+                    'j': j,
+                    'edge': value
+                })
+
+                if value > top_edge:
+                    top_edge = value
+
+        for edge in edges:
+            value = self.scale_pixel(top_edge, edge['edge'])
+            self.image.putpixel((edge['i'], edge['j']), (value, value, value))
+
+        tkimage = ImageTk.PhotoImage(self.image)
+        self.w.create_image(350, 350, image=tkimage)
+        self.root.mainloop()
+
+    def sharpening_filter(self):
+        gaussian_array = [[0, -1, 0],
+                   [-1, 5, -1],
+                   [0, -1, 0]]
+
+        original_image = self.image
+
+        edges = []
+        top_edge = 0
+
+        for i in range(self.image.width):
+            for j in range(self.image.height):
+                top_left = self.get_filter_pixel(original_image, i-1, j-1)
+                top = self.get_filter_pixel(original_image, i, j-1)
+                top_right = self.get_filter_pixel(original_image, i+1, j-1)
+
+                center_left = self.get_filter_pixel(original_image, i-1, j)
+                center = self.get_filter_pixel(original_image, i, j)
+                center_right = self.get_filter_pixel(original_image, i+1, j)
+
+                bottom_left = self.get_filter_pixel(original_image, i-1, j+1)
+                bottom = self.get_filter_pixel(original_image, i, j+1)
+                bottom_right = self.get_filter_pixel(original_image, i+1, j+1)
+
+                pixel_x = (gaussian_array[0][0] * top_left[0]) + (gaussian_array[0][1] * top[0]) + (gaussian_array[0][2] * top_right[0]) + (gaussian_array[1][0] * center_left[0]) + (gaussian_array[1][1] * center[0]) + (gaussian_array[1][2] * center_right[0]) + (gaussian_array[2][0] * bottom_left[0]) + (gaussian_array[2][1] * bottom[0]) + (gaussian_array[2][2] * bottom_right[0])
+                value = int(pixel_x)
+
+                edges.append({
+                    'i': i,
+                    'j': j,
+                    'edge': value
+                })
+
+                if value > top_edge:
+                    top_edge = value
+
+        for edge in edges:
+            value = self.scale_pixel(top_edge, edge['edge'])
+            self.image.putpixel((edge['i'], edge['j']), (value, value, value))
+
+        tkimage = ImageTk.PhotoImage(self.image)
+        self.w.create_image(350, 350, image=tkimage)
+        self.root.mainloop()
+
+    def lowpass_filter(self):
+        gaussian_array = [[1/9, 1/9, 1/9],
+                   [1/9, 1/9, 1/9],
+                   [1/9, 1/9, 1/9]]
+
+        original_image = self.image
+
+        edges = []
+        top_edge = 0
+
+        for i in range(self.image.width):
+            for j in range(self.image.height):
+                top_left = self.get_filter_pixel(original_image, i-1, j-1)
+                top = self.get_filter_pixel(original_image, i, j-1)
+                top_right = self.get_filter_pixel(original_image, i+1, j-1)
+
+                center_left = self.get_filter_pixel(original_image, i-1, j)
+                center = self.get_filter_pixel(original_image, i, j)
+                center_right = self.get_filter_pixel(original_image, i+1, j)
+
+                bottom_left = self.get_filter_pixel(original_image, i-1, j+1)
+                bottom = self.get_filter_pixel(original_image, i, j+1)
+                bottom_right = self.get_filter_pixel(original_image, i+1, j+1)
+
+                pixel_x = (gaussian_array[0][0] * top_left[0]) + (gaussian_array[0][1] * top[0]) + (gaussian_array[0][2] * top_right[0]) + (gaussian_array[1][0] * center_left[0]) + (gaussian_array[1][1] * center[0]) + (gaussian_array[1][2] * center_right[0]) + (gaussian_array[2][0] * bottom_left[0]) + (gaussian_array[2][1] * bottom[0]) + (gaussian_array[2][2] * bottom_right[0])
+                value = int(pixel_x)
+
+                edges.append({
+                    'i': i,
+                    'j': j,
+                    'edge': value
+                })
+
+                if value > top_edge:
+                    top_edge = value
+
+        for edge in edges:
+            value = self.scale_pixel(top_edge, edge['edge'])
+            self.image.putpixel((edge['i'], edge['j']), (value, value, value))
+
+        tkimage = ImageTk.PhotoImage(self.image)
+        self.w.create_image(350, 350, image=tkimage)
+        self.root.mainloop()
+
+    def emboss_filter(self):
+        gaussian_array = [[-2, -1, 0],
+                   [-1, 1, 1],
+                   [0, 1, 2]]
+
+        original_image = self.image
+
+        edges = []
+        top_edge = 0
+
+        for i in range(self.image.width):
+            for j in range(self.image.height):
+                top_left = self.get_filter_pixel(original_image, i-1, j-1)
+                top = self.get_filter_pixel(original_image, i, j-1)
+                top_right = self.get_filter_pixel(original_image, i+1, j-1)
+
+                center_left = self.get_filter_pixel(original_image, i-1, j)
+                center = self.get_filter_pixel(original_image, i, j)
+                center_right = self.get_filter_pixel(original_image, i+1, j)
+
+                bottom_left = self.get_filter_pixel(original_image, i-1, j+1)
+                bottom = self.get_filter_pixel(original_image, i, j+1)
+                bottom_right = self.get_filter_pixel(original_image, i+1, j+1)
+
+                pixel_x = (gaussian_array[0][0] * top_left[0]) + (gaussian_array[0][1] * top[0]) + (gaussian_array[0][2] * top_right[0]) + (gaussian_array[1][0] * center_left[0]) + (gaussian_array[1][1] * center[0]) + (gaussian_array[1][2] * center_right[0]) + (gaussian_array[2][0] * bottom_left[0]) + (gaussian_array[2][1] * bottom[0]) + (gaussian_array[2][2] * bottom_right[0])
+                value = int(pixel_x)
+
+                edges.append({
+                    'i': i,
+                    'j': j,
+                    'edge': value
+                })
+
+                if value > top_edge:
+                    top_edge = value
+
+        for edge in edges:
+            value = self.scale_pixel(top_edge, edge['edge'])
+            self.image.putpixel((edge['i'], edge['j']), (value, value, value))
+
+        tkimage = ImageTk.PhotoImage(self.image)
+        self.w.create_image(350, 350, image=tkimage)
+        self.root.mainloop()
 
     def convolution(self):
         x = 1

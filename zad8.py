@@ -3,12 +3,9 @@ from tkinter.filedialog import askopenfilename
 import os
 from PIL import Image, ImageTk
 import time
+import copy
 import math
-from matplotlib import pyplot as plt
-import numpy as np
 
-def getRed(redVal):
-    return '#%02x%02x%02x' % (redVal, 0, 0)
 
 class PPM:
     header_read = False
@@ -191,20 +188,23 @@ class Menu:
         save_jpg = Button(self.root, width=15, command=self.save_jpg_prompt, text='Zapisz plik JPG', height=2)
         save_jpg.grid(row=0, column=2, sticky='N')
 
-        enlarge_histogram = Button(self.root, width=15, command=self.enlarge_histogram, text='Rozszerz histogram', height=2)
-        enlarge_histogram.grid(row=0, column=3, sticky='N')
+        grayscale = Button(self.root, width=15, command=self.grayscale_prompt, text='Skala szarosci', height=2)
+        grayscale.grid(row=2, column=0, sticky='N')
 
-        equalize_histogram = Button(self.root, width=15, command=self.equalize_histogram, text='Wyrownaj histogram', height=2)
-        equalize_histogram.grid(row=1, column=0, sticky='N')
+        grayscale_formula = Button(self.root, width=15, command=self.grayscale_prompt_formula, text='Skala szarosci wzor', height=2)
+        grayscale_formula.grid(row=2, column=1, sticky='N')
 
-        threshold_manual = Button(self.root, width=15, command=self.manual_threshold_prompt, text='Binaryzacja\nmanual', height=2)
-        threshold_manual.grid(row=1, column=1, sticky='N')
+        erosion = Button(self.root, width=15, command=self.erosion, text='Erozja', height=2)
+        erosion.grid(row=3, column=0, sticky='N')
 
-        percent_black = Button(self.root, width=15, command=self.percent_black_prompt, text='Binaryzacja\nPBS', height=2)
-        percent_black.grid(row=1, column=2, sticky='N')
+        dilatation = Button(self.root, width=15, command=self.dilatation, text='Dylatacja', height=2)
+        dilatation.grid(row=3, column=1, sticky='N')
 
-        blackwhite = Button(self.root, width=15, command=self.blackwhite, text='Czarnobialy', height=2)
-        blackwhite.grid(row=1, column=3, sticky='N')
+        opening = Button(self.root, width=15, command=self.opening, text='Otwarcie', height=2)
+        opening.grid(row=3, column=2, sticky='N')
+
+        closing = Button(self.root, width=15, command=self.closing, text='Domkniecie', height=2)
+        closing.grid(row=3, column=3, sticky='N')
 
         self.w.grid(row=5, column=0, columnspan=4, rowspan=9, sticky=W+E+N+S)
 
@@ -293,108 +293,17 @@ class Menu:
         rlbl = Label(r, text='\nPomyslnie zapisano plik.',)
         rlbl.pack()
 
-    def get_brightness(self, i, j):
-        r, g, b = self.image.getpixel((i, j))
-        return sum([r, g, b]) / 3
-
-    def enlarge_histogram(self):
-        lowest_brightness = self.get_brightness(0, 0)
-        highest_brightness = 0
-        for i in range(self.image.width):
-            for j in range(self.image.height):
-                brightness = self.get_brightness(i, j)
-                if brightness < lowest_brightness:
-                    lowest_brightness = brightness
-
-                if brightness > highest_brightness:
-                    highest_brightness = brightness
-
+    def grayscale_prompt(self):
         for i in range(self.image.width):
             for j in range(self.image.height):
                 r, g, b = self.image.getpixel((i, j))
-                brightness = sum([r, g, b])/3
-                value = round((255/(highest_brightness-lowest_brightness)) * (brightness-lowest_brightness))
-                self.image.putpixel((i, j), (value, value, value))
+                average = int(r + g + b / 3)
 
-        histogram = self.image.histogram()
-        l1 = histogram[0:256]
-        plt.figure(0)
-        for i in range(0, 256):
-            plt.bar(i, l1[i], color=getRed(i), edgecolor=getRed(i), alpha=0.3)
-        plt.show()
+                self.image.putpixel((i, j), (average, average, average))
 
         tkimage = ImageTk.PhotoImage(self.image)
         self.w.create_image(350, 350, image=tkimage)
         self.root.mainloop()
-
-    def equalize_histogram(self):
-        dimensions = self.image.width * self.image.height
-
-        im = np.array(self.image)
-        H, X1 = np.histogram(im, bins=256, normed=True)
-        dx = X1[1] - X1[0]
-        cdf = np.cumsum(H) * dx
-
-        for i in range(self.image.width):
-            for j in range(self.image.height):
-                brightness = round(self.get_brightness(i, j))
-
-                current_cdf = dimensions*cdf[brightness]
-                min_cdf = dimensions*cdf.min()
-
-                formula_first = (current_cdf - min_cdf) / (dimensions - min_cdf)
-                formula_final = int(round(formula_first * 255))
-
-                self.image.putpixel((i, j), (formula_final, formula_final, formula_final))
-
-        histogram = self.image.histogram()
-        l1 = histogram[0:256]
-        plt.figure(0)
-        for i in range(0, 256):
-            plt.bar(i, l1[i], color=getRed(i), edgecolor=getRed(i), alpha=0.3)
-        plt.show()
-        tkimage = ImageTk.PhotoImage(self.image)
-        self.w.create_image(350, 350, image=tkimage)
-        self.root.mainloop()
-
-    def manual_threshold_prompt(self):
-        r = Tk()
-        r.title('Wprowadz wartosc')
-        r.geometry('600x150')
-
-        Label(r, text="Wprowadz wartosc").grid(column=1, row=0, sticky=W)
-        threshold = Entry(r)
-        threshold.insert(0, '1')
-        threshold.grid(row=0, column=2)
-
-        draw_button = Button(r, command=lambda: self.manual_threshold(threshold.get()), text='Zrob to')
-        draw_button.grid(columnspan=3, row=4, column=1, padx=10, pady=10)
-
-    def manual_threshold(self, threshold):
-        threshold = int(threshold)
-        for i in range(self.image.width):
-            for j in range(self.image.height):
-                brightness = self.get_brightness(i, j)
-                if brightness <= threshold:
-                    self.image.putpixel((i, j), (0, 0, 0))
-                else:
-                    self.image.putpixel((i, j), (255, 255, 255))
-        tkimage = ImageTk.PhotoImage(self.image)
-        self.w.create_image(350, 350, image=tkimage)
-        self.root.mainloop()
-
-    def percent_black_prompt(self):
-        r = Tk()
-        r.title('Wprowadz wartosc')
-        r.geometry('600x150')
-
-        Label(r, text="Wprowadz wartosc procentowo").grid(column=1, row=0, sticky=W)
-        threshold = Entry(r)
-        threshold.insert(0, '1')
-        threshold.grid(row=0, column=2)
-
-        draw_button = Button(r, command=lambda: self.percent_black(threshold.get()), text='Zrob to')
-        draw_button.grid(columnspan=3, row=4, column=1, padx=10, pady=10)
 
     def grayscale_prompt_formula(self):
         for i in range(self.image.width):
@@ -404,36 +313,91 @@ class Menu:
 
                 self.image.putpixel((i, j), (value, value, value))
 
-    def blackwhite(self):
-        for i in range(self.image.width):
-            for j in range(self.image.height):
-                r, g, b = self.image.getpixel((i, j))
-                value = int(0.21 * r + 0.72 * g + 0.07 * b)
-
-                self.image.putpixel((i, j), (value, value, value))
         tkimage = ImageTk.PhotoImage(self.image)
         self.w.create_image(350, 350, image=tkimage)
         self.root.mainloop()
 
-    def percent_black(self, threshold):
-        threshold = int(threshold)
-        sum = 0
-        total_pixels = self.image.width * self.image.height
-        desired_pixels = threshold * 0.01 * total_pixels
-
-        self.grayscale_prompt_formula()
-
-        histogram = self.image.histogram()
-        l1 = histogram[0:256]
-
-        for index, value in enumerate(l1):
-            if sum <= desired_pixels:
-                sum += value
+    def get_filter_pixel(self, image, x, y, mode=0):
+        try:
+            return image.getpixel((x, y))
+        except IndexError:
+            if mode is 0:  # dilatation
+                return 0, 0, 0
             else:
-                break
+                return 255, 255, 255
 
-        self.manual_threshold(index)
+    def scale_pixel(self, max, value):
+        return round(255 / max * value)
 
+    def erosion(self, multiple=False):
+        # self.grayscale_prompt_formula()
+        original_image = copy.deepcopy(self.image)
+
+        for i in range(self.image.width):
+            for j in range(self.image.height):
+                top_left = self.get_filter_pixel(original_image, i-1, j-1, 1)
+                top = self.get_filter_pixel(original_image, i, j-1, 1)
+                top_right = self.get_filter_pixel(original_image, i+1, j-1, 1)
+
+                center_left = self.get_filter_pixel(original_image, i-1, j, 1)
+                center = self.get_filter_pixel(original_image, i, j, 1)
+                center_right = self.get_filter_pixel(original_image, i+1, j, 1)
+
+                bottom_left = self.get_filter_pixel(original_image, i-1, j+1, 1)
+                bottom = self.get_filter_pixel(original_image, i, j+1, 1)
+                bottom_right = self.get_filter_pixel(original_image, i+1, j+1, 1)
+
+                all_points_list = [top_left, top, top_right, center_left, center, center_right, bottom_left, bottom, bottom_right]
+                minimum = min(all_points_list)
+
+                self.image.putpixel((i, j), (minimum[0], minimum[1], minimum[2]))
+
+        if multiple is False:
+            tkimage = ImageTk.PhotoImage(self.image)
+            self.w.create_image(350, 350, image=tkimage)
+            self.root.mainloop()
+
+    def dilatation(self, multiple=False):
+        # self.grayscale_prompt_formula()
+        original_image = copy.deepcopy(self.image)
+
+        for i in range(self.image.width):
+            for j in range(self.image.height):
+                top_left = self.get_filter_pixel(original_image, i-1, j-1)
+                top = self.get_filter_pixel(original_image, i, j-1)
+                top_right = self.get_filter_pixel(original_image, i+1, j-1)
+
+                center_left = self.get_filter_pixel(original_image, i-1, j)
+                center = self.get_filter_pixel(original_image, i, j)
+                center_right = self.get_filter_pixel(original_image, i+1, j)
+
+                bottom_left = self.get_filter_pixel(original_image, i-1, j+1)
+                bottom = self.get_filter_pixel(original_image, i, j+1)
+                bottom_right = self.get_filter_pixel(original_image, i+1, j+1)
+
+                all_points_list = [top_left, top, top_right, center_left, center, center_right, bottom_left, bottom, bottom_right]
+
+                maximum = max(all_points_list)
+                self.image.putpixel((i, j), (maximum[0], maximum[1], maximum[2]))
+
+        if multiple is False:
+            tkimage = ImageTk.PhotoImage(self.image)
+            self.w.create_image(350, 350, image=tkimage)
+            self.root.mainloop()
+
+    def opening(self):
+        self.erosion(True)
+        self.dilatation(True)
+        tkimage = ImageTk.PhotoImage(self.image)
+        self.w.create_image(350, 350, image=tkimage)
+        self.root.mainloop()
+
+    def closing(self):
+        self.dilatation(True)
+        self.erosion(True)
+        tkimage = ImageTk.PhotoImage(self.image)
+        self.w.create_image(350, 350, image=tkimage)
+        self.root.mainloop()
 
 
 Menu()

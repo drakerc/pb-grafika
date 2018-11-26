@@ -20,7 +20,7 @@ class Menu:
 
         self.root.configure(bg=maincolor)
         self.root.title('Krzysztof Kosinski - program grafika komputerowa')
-        self.root.minsize(width=400, height=400)
+        self.root.minsize(width=400, height=230)
 
         # RGB
         Label(self.root, text="R (red)").grid(column=0, row=0, sticky=W)
@@ -130,8 +130,8 @@ class Menu:
                 return
 
         if color_picker_widget.run() != getattr(Gtk, 'RESPONSE_OK', Gtk.ResponseType.OK):
-            print('Nie wybrales koloru')
-            exit()
+            self.show_error('Nie wybrales koloru')
+            return
 
         color = color_picker_widget.get_color_selection().get_current_color()
         red = int(color.red / 256)
@@ -156,14 +156,8 @@ class Menu:
         self.color_y.insert(0, yellow)
         self.color_k.insert(0, black)
 
-        # color_picker_widget = None
         color_picker_widget.destroy()
-        # Gtk.main()
-        # Gdk.threads_leave()
-        # self.root.mainloop()
 
         return
-
-
 
 Menu()
